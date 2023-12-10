@@ -1,10 +1,9 @@
 package io.arrogantprogrammer.rest;
 
 import io.arrogantprogrammer.domain.OrderRecord;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
+import io.arrogantprogrammer.domain.OrderStatus;
+import io.arrogantprogrammer.domain.PlaceOrderCommand;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
@@ -29,4 +28,16 @@ public class RESTResource {
         return allOrders;
     }
 
+    @POST
+    public OrderRecord placeOrder(PlaceOrderCommand placeOrderCommand) {
+        OrderRecord orderRecord = restClientSynchronous.placeOrder(placeOrderCommand);
+        LOGGER.debug("orderRecord: {}", orderRecord);
+        return orderRecord;
+    }
+
+    @GET
+    @Path("/inprogress")
+    public List<OrderRecord> inProgressOrders() {
+        return restClientSynchronous.allOrders().stream().filter(orderRecord -> orderRecord.orderStatus().equals(OrderStatus.PENDING)).toList();
+    }
 }
