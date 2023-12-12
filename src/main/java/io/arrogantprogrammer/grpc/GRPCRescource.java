@@ -3,6 +3,7 @@ package io.arrogantprogrammer.grpc;
 import io.arrogantprogrammer.domain.*;
 import io.arrogantprogrammer.proto.*;
 import io.quarkus.grpc.GrpcClient;
+import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -38,6 +39,7 @@ public class GRPCRescource {
 
     @POST
     public OrderRecord placeOrder(PlaceOrderCommand placeOrderCommand) {
+        LOGGER.debug("Received order for {}.", placeOrderCommand);
         PlaceOrderProto placeOrderProto = PlaceOrderProto.newBuilder()
                 .setMenuItem(MenuItemProto.forNumber(placeOrderCommand.menuItem().ordinal()))
                 .setOrderName(placeOrderCommand.name())
@@ -53,7 +55,9 @@ public class GRPCRescource {
 
     @GET
     @Path("/inprogress")
-    public List<OrderRecord> inProgressOrders() {
-        return new ArrayList<>();//restClientSynchronous.allOrders().stream().filter(orderRecord -> orderRecord.orderStatus().equals(OrderStatus.PENDING)).toList();
+    public Uni<List<OrderRecord>> inProgressOrders() {
+        return grpcServiceClient.inProgressOrders(Empty.newBuilder().build()).onItem().transform(orderRecordProto -> {
+            return new OrderRecord(Long.valueOf(orderRecordProto.getId()), orderRecordProto.getName(), MenuItem.values()[orderRecordProto.getMenuItem().getNumber()], OrderStatus.values()[orderRecordProto.getOrderStatus().getNumber()], PaymentStatus.values()[orderRecordProto.getPaymentStatus().getNumber()]);
+        }).collect().asList();
     }
 }
